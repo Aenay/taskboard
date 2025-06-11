@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Spatie\Permission\Traits\HasRoles;
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use  HasFactory, Notifiable, HasRoles;
+    use  Notifiable, HasRoles;
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     // use HasFactory, Notifiable;
@@ -47,5 +46,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get tasks assigned to the user
+     */
+    public function assignedTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    /**
+     * Get tasks created by the user
+     */
+    public function createdTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'created_by');
+    }
+
+    /**
+     * Get projects managed by the user
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'manager_id');
     }
 }
