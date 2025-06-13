@@ -76,4 +76,21 @@ class AdminController extends Controller
         return redirect()->route('admin.dashboard')
             ->with('success', 'User created successfully.');
     }
+
+    public function destroyUser(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        // Check if user has any tasks or projects before deletion
+        if ($user->assignedTasks()->exists() || $user->projects()->exists()) {
+            return back()->with('error', 'Cannot delete user with associated tasks or projects.');
+        }
+
+        $user->delete();
+
+        return redirect()->route('admin.dashboard')
+            ->with('success', 'User deleted successfully.');
+    }
 }

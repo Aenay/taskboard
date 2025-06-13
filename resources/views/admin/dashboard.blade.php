@@ -72,11 +72,21 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-100">
                                             {{ $user->roles->pluck('name')->implode(', ') }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <button onclick="window.location.href='{{ route('admin.users.edit', $user) }}'"
-                                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="{{ route('admin.users.edit', $user) }}"
+                                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4">
                                                 Edit
-                                            </button>
+                                            </a>
+
+                                            <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline-block">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                    onclick="return confirm('Are you sure you want to delete this user?')"
+                                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                                    Delete
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 @endforeach

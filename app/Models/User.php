@@ -56,6 +56,12 @@ class User extends Authenticatable
         return $this->hasMany(Task::class, 'assigned_to');
     }
 
+    public function completedTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'assigned_to')->whereNotNull('completed_at');
+    }
+
+
     /**
      * Get tasks created by the user
      */
@@ -70,5 +76,18 @@ class User extends Authenticatable
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class, 'manager_id');
+    }
+
+    /**
+     * Get total tasks count (assigned + created)
+     */
+    public function totalTasks()
+    {
+        if ($this->hasRole('admin')) {
+            return Task::query();
+        }
+
+        return Task::where('assigned_to', $this->id)
+            ->orWhere('created_by', $this->id);
     }
 }

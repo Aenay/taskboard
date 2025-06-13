@@ -31,26 +31,26 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         // Create roles and assign permissions
-        $role = Role::create(['name' => 'member']);
+        Role::create(['name' => 'admin']);
+        Role::create(['name' => 'project-manager']);
+        Role::create(['name' => 'member']);
+
+        $role = Role::findByName('member');
         $role->givePermissionTo([
             'view projects',
             'view tasks',
-            'create tasks',
-            'edit tasks'
         ]);
 
-        $role = Role::create(['name' => 'project-manager']);
+        $role = Role::findByName('project-manager');
         $role->givePermissionTo([
             'view projects',
-            'create projects',
-            'edit projects',
             'view tasks',
             'create tasks',
             'edit tasks',
             'delete tasks'
         ]);
 
-        $role = Role::create(['name' => 'admin']);
+        $role = Role::findByName('admin');
         $role->givePermissionTo(Permission::all());
     }
 }

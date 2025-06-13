@@ -21,18 +21,21 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-    Route::get('/admin/users/{user}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
-    Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+Route::middleware(['auth','role:admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/users/{user}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
+    Route::patch('/users/{user}', [AdminController::class, 'updateUser'])->name('admin.users.update');
 
-    Route::get('/admin/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
-    Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
+    Route::get('/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
+    Route::post('/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
+    Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('admin.users.destroy');
+
 });
 
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth','role:admin|project-manager'])->group(function () {
     Route::resource('/projects', ProjectController::class);
+    Route::patch('/projects/{project}/status', [ProjectController::class, 'updateStatus'])->name('projects.update-status');
 });
 
 Route::middleware(['auth' ])->group(function () {
