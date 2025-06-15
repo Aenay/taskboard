@@ -83,13 +83,20 @@ class ProjectController extends Controller
         return view('projects.show', compact('project'));
     }
 
-    public function updateStatus(Project $project, Request $request)
+    public function updateStatus(Request $request, Project $project)
     {
-        $request->validate([
+        $this->authorize('updateStatus', $project);
+
+        $validated = $request->validate([
             'status' => 'required|in:planned,in_progress,completed,on_hold'
         ]);
 
-        $project->update(['status' => $request->status]);
-        return back()->with('success', 'Project status updated successfully');
+        $project->update([
+            'status' => $validated['status'],
+            'completed_at' => $validated['status'] === 'completed' ? now() : null
+        ]);
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Project status updated successfully.');
     }
 }

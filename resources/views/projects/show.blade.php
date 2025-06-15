@@ -1,10 +1,29 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ $project->name }}
+            <h2 class="font-semibold text-xl text-white leading-tight">
+                Project: {{ $project->name }}
             </h2>
-            <div class="flex space-x-2">
+            <div class="flex space-x-4">
+                @can('updateStatus', $project)
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Change Status
+                        </button>
+                        <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-50">
+                            <form action="{{ route('projects.update-status', $project) }}" method="POST">
+                                @csrf
+                                @method('PATCH')
+                                @foreach(['planned', 'in_progress', 'completed', 'on_hold'] as $status)
+                                    <button type="submit" name="status" value="{{ $status }}"
+                                        class="block w-full text-left px-4 py-2 text-white hover:bg-gray-700 {{ $project->status === $status ? 'bg-gray-700' : '' }}">
+                                        {{ ucfirst(str_replace('_', ' ', $status)) }}
+                                    </button>
+                                @endforeach
+                            </form>
+                        </div>
+                    </div>
+                @endcan
                 @can('edit projects')
                 <a href="{{ route('projects.edit', $project) }}"
                    class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
@@ -51,7 +70,7 @@
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Project Status</h3>
                             <div class="grid grid-cols-2 gap-4">
-                                @can('edit projects')
+                                @can('edit projects','updateStatus')
                                 <form action="{{ route('projects.update-status', $project) }}" method="POST">
                                     @csrf
                                     @method('PATCH')

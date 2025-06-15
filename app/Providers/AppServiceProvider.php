@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Task;
+use App\Policies\TaskPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -42,4 +44,13 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole(['admin', 'project-manager']);
         });
     }
+
+    /**
+     * The model to policy mappings for the application.
+     *
+     * @var array
+     */
+    protected $policies = [
+        Task::class => TaskPolicy::class,
+    ];
 }

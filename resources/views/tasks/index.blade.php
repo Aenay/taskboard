@@ -34,101 +34,60 @@
                                         <span class="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Project</span>
                                     </th>
                                     <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left">
-                                        <span class="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Project Manager</span>
+                                        <span class="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Manager</span>
                                     </th>
                                     <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left">
                                         <span class="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</span>
                                     </th>
                                     <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left">
-                                        <span class="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Priority</span>
-                                    </th>
-                                    <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left">
                                         <span class="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Due Date</span>
                                     </th>
-                                    <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-left">
+                                    <th class="px-6 py-3 bg-gray-50 dark:bg-gray-700 text-right">
                                         <span class="text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</span>
                                     </th>
-
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                                 @forelse($tasks as $task)
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-300">
+                                    <td class="px-6 py-4 whitespace-nowrap dark:text-gray-300">
                                         {{ $task->title }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-300">
+                                    <td class="px-6 py-4 whitespace-nowrap  dark:text-gray-300">
                                         {{ $task->project->name }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-white">
+                                    <td class="px-6 py-4 whitespace-nowrap  dark:text-gray-300">
                                         {{ $task->project->manager->name }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        @if(auth()->id() === $task->assigned_to || auth()->user()->hasAnyRole(['admin', 'project-manager']))
-                                            <form action="{{ route('tasks.toggle-status', $task) }}" method="POST" class="inline">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit"
-                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                                        {{ $task->status === 'completed' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                                                           ($task->status === 'review' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
-                                                           ($task->status === 'in_progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
-                                                           'bg-gray-100 text-gray-800 hover:bg-gray-200')) }}">
-                                                    {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                                                </button>
-                                            </form>
-                                        @else
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                                {{ $task->status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                   ($task->status === 'review' ? 'bg-yellow-100 text-yellow-800' :
-                                                   ($task->status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                                                   'bg-gray-100 text-gray-800')) }}">
-                                                {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                            {{ $task->priority === 'high' ? 'bg-red-100 text-red-800' :
-                                               ($task->priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                               'bg-green-100 text-green-800') }}">
-                                            {{ ucfirst($task->priority) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-300">
-                                        {{ $task->due_date->format('Y-m-d') }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <form action="{{ route('tasks.toggle-status', $task) }}" method="POST" class="inline-block">
+                                        <form action="{{ route('tasks.toggle-status', $task) }}" method="POST" class="inline">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit"
-                                                class="{{ $task->status === 'completed' ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900' }} mr-4">
-                                                {{ $task->status === 'completed' ? 'Reopen' : 'Complete' }}
+                                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                                    {{ $task->status === 'completed' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                                                       ($task->status === 'review' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                                                       ($task->status === 'in_progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                                                       'bg-gray-100 text-gray-800 hover:bg-gray-200')) }}">
+                                                {{ ucfirst(str_replace('_', ' ', $task->status)) }}
                                             </button>
                                         </form>
-                                        @can('edit tasks')
-                                        <a href="{{ route('tasks.edit', $task) }}"
-                                           class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                            Edit
-                                        </a>
-                                        @endcan
-                                        @can('delete tasks')
-                                        <form action="{{ route('tasks.destroy', $task) }}" method="POST" class="inline-block">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                onclick="return confirm('Are you sure you want to delete this task?')"
-                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 ml-4">
-                                                Delete
-                                            </form>
-                                            @endcan
                                     </td>
-
+                                    <td class="px-6 py-4 whitespace-nowrap  dark:text-gray-300">
+                                        {{ $task->due_date->format('M d, Y') }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        @if(auth()->user()->hasAnyRole(['admin', 'project-manager']) || $task->assigned_to === auth()->id())
+                                            <a href="{{ route('tasks.show', $task) }}"
+                                               class="text-indigo-400 hover:text-indigo-300">
+                                                View Details
+                                            </a>
+                                        @endif
+                                    </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                                    <td colspan="6" class="px-6 py-4 text-center text-white">
                                         No tasks found
                                     </td>
                                 </tr>

@@ -26,6 +26,11 @@
                     <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')">
                         {{ __('Tasks') }}
                     </x-nav-link>
+                    @role('admin')
+                    <x-nav-link :href="route('admin.activities.index')" :active="request()->routeIs('admin.activities.index')">
+                        {{ __('Activity Log') }}
+                    </x-nav-link>
+                    @endrole
 
                 </div>
             </div>

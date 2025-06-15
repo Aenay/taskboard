@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\RecordsActivity;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Task extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, RecordsActivity;
 
     protected $fillable = [
         'title',
@@ -17,15 +18,16 @@ class Task extends Model
         'project_id',
         'assigned_to',
         'created_by',
-        'priority',
         'status',
+        'priority',
         'due_date',
-        'completed_at'
+        'documentation',
+        'documentation_submitted_at'
     ];
 
     protected $casts = [
-        'due_date' => 'date',
-        'completed_at' => 'datetime',
+        'due_date' => 'datetime',
+        'documentation_submitted_at' => 'datetime',
     ];
 
     public function project()

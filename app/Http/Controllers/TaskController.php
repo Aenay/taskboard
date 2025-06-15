@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Notifications\TaskDocumentationSubmitted;
 
 class TaskController extends Controller
 {
@@ -32,76 +33,76 @@ class TaskController extends Controller
                     $q->where('manager_id', auth()->id());
                 });
             })
+            ->when(auth()->user()->hasRole('member'), function ($query) {
+                $query->where('assigned_to', auth()->id());
+            })
             ->latest()
             ->paginate(10);
 
         return view('tasks.index', compact('tasks'));
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        $this->authorize('create tasks');
-
-        // Get project manager's projects or specific project if provided
-        if (auth()->user()->hasRole('admin')) {
-            $project = $request->project ? Project::findOrFail($request->project) : null;
-        } else {
-            // For project managers, either use specified project (if they manage it) or their first project
-            if ($request->project) {
-                $project = Project::where('manager_id', auth()->id())
-                    ->findOrFail($request->project);
-            } else {
-                $project = Project::where('manager_id', auth()->id())->first();
-
-                if (!$project) {
-                    return redirect()->route('tasks.index')
-                        ->with('error', 'You need to be assigned as a project manager to create tasks.');
-                }
-            }
+        // Check if user is admin or project manager
+        if (!auth()->user()->hasAnyRole(['admin', 'project-manager'])) {
+            abort(403);
         }
 
-        $users = $this->getAssignableUsers();
+        // Get projects based on role
+        if (auth()->user()->hasRole('admin')) {
+            $projects = Project::all();
+        } else {
+            $projects = Project::where('manager_id', auth()->id())->get();
+        }
 
-        return view('tasks.create', compact('users', 'project'));
+        if ($projects->isEmpty()) {
+            return redirect()->route('tasks.index')
+                ->with('error', 'You need to have projects assigned to create tasks.');
+        }
+
+        // Get assignable users (members only)
+        $users = User::role('member')->get();
+
+        return view('tasks.create', compact('projects', 'users'));
     }
 
     public function store(Request $request)
     {
-        $this->authorize('create tasks');
+        // Check if user is admin or project manager
+        if (!auth()->user()->hasAnyRole(['admin', 'project-manager'])) {
+            abort(403);
+        }
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'project_id' => 'required|exists:projects,id',
             'assigned_to' => 'required|exists:users,id',
-            'priority' => 'required|in:low,medium,high',
-            'status' => 'required|in:todo,in_progress,review,completed',
-            'due_date' => 'required|date',
+            'due_date' => 'required|date|after:today',
         ]);
 
-        // Get the project based on user role
-        if (auth()->user()->hasRole('admin')) {
-            $project = Project::findOrFail($request->project_id);
-        } else {
-            $project = Project::where('manager_id', auth()->id())->first();
-            if (!$project) {
-                return redirect()->route('tasks.index')
-                    ->with('error', 'No project found.');
+        // Verify project manager can only create tasks for their projects
+        if (auth()->user()->hasRole('project-manager')) {
+            $project = Project::findOrFail($validated['project_id']);
+            if ($project->manager_id !== auth()->id()) {
+                abort(403, 'You can only create tasks for your own projects.');
             }
         }
 
-        Task::create([
+        $task = Task::create([
             ...$validated,
-            'project_id' => $project->id,
+            'status' => 'in_progress',
             'created_by' => auth()->id(),
         ]);
 
-        return redirect()->route('projects.show', $project)
+        return redirect()->route('tasks.show', $task)
             ->with('success', 'Task created successfully.');
     }
 
     public function edit(Task $task)
     {
-        $this->authorize('edit tasks');
+        $this->authorize('update', $task);
 
         $projects = Project::all();
         $users = $this->getAssignableUsers();
@@ -111,7 +112,7 @@ class TaskController extends Controller
 
     public function update(Request $request, Task $task)
     {
-        $this->authorize('edit tasks');
+        $this->authorize('update', $task);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -133,50 +134,80 @@ class TaskController extends Controller
             ->with('success', 'Task updated successfully.');
     }
 
+    public function show(Task $task)
+    {
+        $this->authorize('view', $task);
+        return view('tasks.show', compact('task'));
+    }
+
     public function toggleStatus(Task $task)
     {
-        // Check if user is assigned to this task
-        if (auth()->id() !== $task->assigned_to && !auth()->user()->hasAnyRole(['admin', 'project-manager'])) {
-            abort(403, 'You can only update tasks assigned to you.');
-        }
-
-        // Get current status
-        $currentStatus = $task->status;
-
-        // Determine new status based on role and current status
-        if (auth()->user()->hasAnyRole(['admin', 'project-manager'])) {
-            // Admin and project manager can toggle between all statuses
-            $newStatus = match ($currentStatus) {
-                'todo' => 'in_progress',
-                'in_progress' => 'review',
-                'review' => 'completed',
-                'completed' => 'todo',
-            };
-        } else {
-            // Members can only toggle between todo, in_progress, and review
-            $newStatus = match ($currentStatus) {
-                'todo' => 'in_progress',
-                'in_progress' => 'review',
-                'review' => 'todo',
-                'completed' => 'todo',
-            };
+        if (auth()->id() !== $task->assigned_to) {
+            abort(403);
         }
 
         $task->update([
-            'status' => $newStatus,
-            'completed_at' => $newStatus === 'completed' ? now() : null,
+            'status' => 'review'
         ]);
 
-        return back()->with('success', 'Task status updated successfully.');
+        return redirect()->route('tasks.show', $task)
+            ->with('success', 'Task marked for review successfully.');
+    }
+
+    public function updateStatus(Request $request, Task $task)
+    {
+        if (auth()->id() !== $task->project->manager_id && !auth()->user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:completed,in_progress,review'
+        ]);
+
+        $task->update([
+            'status' => $validated['status'],
+            'completed_at' => $validated['status'] === 'completed' ? now() : null
+        ]);
+
+        return redirect()->route('tasks.show', $task)
+            ->with('success', 'Task status updated successfully.');
     }
 
     public function destroy(Task $task)
     {
-        $this->authorize('delete tasks');
+        $this->authorize('delete', $task);
 
+        $projectId = $task->project_id;
         $task->delete();
 
-        return redirect()->route('projects.{project_id}')
+        // Redirect back to the project view if coming from there
+        if (url()->previous() === route('projects.show', $projectId)) {
+            return redirect()->route('projects.show', $projectId)
+                ->with('success', 'Task deleted successfully.');
+        }
+
+        // Otherwise return to tasks index
+        return redirect()->route('tasks.index')
             ->with('success', 'Task deleted successfully.');
+    }
+
+    public function submitDocumentation(Request $request, Task $task)
+    {
+        if (auth()->id() !== $task->assigned_to) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'documentation' => 'required|string|min:10',
+        ]);
+
+        $task->update([
+            'documentation' => $validated['documentation'],
+            'status' => 'review',
+            'documentation_submitted_at' => now(),
+        ]);
+
+        return redirect()->route('tasks.show', $task)
+            ->with('success', 'Documentation submitted and task marked for review.');
     }
 }

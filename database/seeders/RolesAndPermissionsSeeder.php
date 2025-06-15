@@ -24,6 +24,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'create tasks',
             'edit tasks',
             'delete tasks',
+            'view activities',
         ];
 
         foreach ($permissions as $permission) {
@@ -52,5 +53,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $role = Role::findByName('admin');
         $role->givePermissionTo(Permission::all());
+
+        // Assign 'view activities' permission to admin role
+        $adminRole = Role::findByName('admin');
+        $adminRole->givePermissionTo('view activities');
     }
 }
