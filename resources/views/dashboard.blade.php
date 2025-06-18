@@ -11,7 +11,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <div class="text-gray-500 dark:text-gray-400 text-sm">My Tasks</div>
+                        <x-nav-link :href="route('tasks.index')"><div class="text-gray-500 dark:text-gray-400 text-sm">My Tasks</div></x-nav-link>
                         <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
                             {{ auth()->user()->assignedTasks()->count() }}
                         </div>
